@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER-EMPIRE: INFINITY (MASTER BUILD)</title>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --prestige-gold: #ffcc00;
+            --hacker-red: #ff4d4d;
+            --success-green: #2ecc71;
+            --bg-dark: #020205;
+            --card-bg: #0a0c10;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* TOP NAVIGATION & STATS */
+        #header {
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 2px solid var(--neon-pink);
+            padding: 10px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
+            z-index: 1000;
+        }
+
+        .stats-group { display: flex; gap: 40px; }
+        .stat-item { text-align: left; }
+        .val-big { font-size: 1.8rem; color: var(--neon-blue); font-weight: bold; text-shadow: 0 0 10px var(--neon-blue); }
+
+        /* SIDEBAR NAVIGATION */
+        #wrapper { display: flex; height: calc(100vh - 85px); }
+        #nav { width: 220px; background: #05070a; border-right: 1px solid #1a1a2e; display: flex; flex-direction: column; }
+        
+        .nav-link {
+            padding: 20px; color: #666; cursor: pointer; border-left: 3px solid transparent;
+            transition: 0.3s; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .nav-link:hover { background: #0d1117; color: white; }
+        .nav-link.active { color: var(--neon-blue); border-left-color: var(--neon-blue); background: #111; }
+
+        /* VIEWPORT */
+        #content { flex: 1; overflow-y: auto; padding: 40px; position: relative; background: radial-gradient(#111 1px, transparent 1px); background-size: 20px 20px; }
+        .view { display: none; animation: fadeIn 0.4s ease; }
+        .view.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* CARDS */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; }
+        .panel { 
+            background: var(--card-bg); border: 1px solid #1a1a2e; padding: 20px; border-radius: 4px;
+            transition: transform 0.2s, border-color 0.2s; position: relative;
+        }
+        .panel:hover { border-color: var(--neon-blue); }
+
+        .prog-bg { width: 100%; height: 14px; background: #000; margin: 15px 0; border-radius: 7px; overflow: hidden; border: 1px solid #222; }
+        .prog-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink)); transition: width 0.1s linear; }
+
+        .btn { cursor: pointer; border: none; font-weight: bold; border-radius: 3px; padding: 12px; transition: 0.2s; text-transform: uppercase; }
+        .btn-blue { background: var(--neon-blue); color: #000; width: 100%; }
+        .btn-green { background: #1b4d31; color: #fff; font-size: 0.75rem; flex: 1; }
+        .btn-purple { background: #4a148c; color: #fff; font-size: 0.75rem; flex: 1; }
+        .btn:disabled { opacity: 0.2; cursor: not-allowed; filter: grayscale(1); }
+
+        /* HACKER OVERLAY */
+        #hacker-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 0, 0, 0.4); display: none; z-index: 5000;
+            flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        /* NOTIFICATIONS */
+        #notif-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; }
+        .notif { 
+            background: #111; border-left: 4px solid var(--neon-blue); color: white; 
+            padding: 15px 25px; margin-bottom: 10px; border-radius: 4px; animation: slideIn 0.3s ease forwards;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        .crit-text {
+            position: absolute; font-size: 2rem; color: var(--prestige-gold); font-weight: 900;
+            pointer-events: none; animation: critPop 1s ease-out forwards; text-shadow: 0 0 10px black; z-index: 100;
+        }
+        @keyframes critPop { 0% { opacity:1; transform: scale(0.5) translateY(0); } 100% { opacity:0; transform: scale(1.5) translateY(-100px); } }
+    </style>
+</head>
+<body>
+
+<div id="hacker-overlay">
+    <h1 style="color:white; text-shadow: 0 0 20px red; font-family: monospace;">!! SECURITY BREACH !!</h1>
+    <div style="width: 300px; height: 30px; background: #000; border: 2px solid white; margin: 20px;">
+        <div id="hack-bar-fill" style="width: 100%; height: 100%; background: red;"></div>
+    </div>
+    <p style="color:white">TAP FIREWALL RAPIDLY TO REPEL HACKER</p>
+    <button onclick="defendHack()" style="padding: 20px 50px; font-size: 1.5rem; background: white; color: black; font-weight: bold;">DEFEND SYSTEM</button>
+</div>
+
+<div id="header">
+    <div class="stats-group">
+        <div class="stat-item"><small style="color:#666">LIQUID CREDITS</small><div id="credits" class="val-big">$0</div></div>
+        <div class="stat-item"><small style="color:#666">BIT-SHARDS</small><div id="shards-val" class="val-big" style="color:var(--prestige-gold)">0</div></div>
+    </div>
+    <div style="text-align: right">
+        <small style="color:#666">NETWORK MULTIPLIER</small>
+        <div id="global-multi" style="color:var(--neon-pink)" class="val-big">1.0x</div>
+    </div>
+</div>
+
+<div id="wrapper">
+    <div id="nav">
+        <div class="nav-link active" onclick="tab('district', this)">Industrial District</div>
+        <div class="nav-link" onclick="tab('exchange', this)">Global Exchange</div>
+        <div class="nav-link" onclick="tab('lab', this)">R&D Lab</div>
+        <div class="nav-link" onclick="tab('ascension', this)">Neural Ascension</div>
+    </div>
+
+    <div id="content">
+        <div id="district" class="view active">
+            <h2 style="color:var(--neon-blue)">Sector Management</h2>
+            <div class="card-grid" id="biz-render"></div>
+        </div>
+
+        <div id="exchange" class="view">
+            <h2 style="color:var(--success-green)">Asset Exchange</h2>
+            <div class="card-grid" id="market-render"></div>
+        </div>
+
+        <div id="lab" class="view">
+            <h2 style="color:var(--neon-pink)">Neural Upgrades</h2>
+            <div class="card-grid" id="lab-render">
+                <div class="panel">
+                    <h3>Revenue Optimization</h3>
+                    <p>Increases base yield by 25%</p>
+                    <button class="btn btn-blue" onclick="buyRes('yield')">Research: $<span id="res-yield-cost">500</span></button>
+                </div>
+                <div class="panel">
+                    <h3>Speed Overclock</h3>
+                    <p>Reduces cycle time by 10%</p>
+                    <button class="btn btn-blue" onclick="buyRes('speed')">Research: $<span id="res-speed-cost">1000</span></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="ascension" class="view" style="text-align: center;">
+            <div class="panel" style="max-width: 500px; margin: 0 auto; border: 2px solid var(--prestige-gold);">
+                <h1 style="color:var(--prestige-gold)">REBOOT REALITY</h1>
+                <p>Sacrifice your current empire for permanent Bit-Shards.</p>
+                <div id="shard-gain" style="font-size:2.5rem; margin:20px 0; font-family: monospace;">+0 Shards</div>
+                <button class="btn btn-blue" style="background:var(--prestige-gold); width:auto; padding:15px 60px" onclick="prestige()">ASCEND</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="notif-container"></div>
+
+<script>
+    // --- GLOBAL STATE ---
+    let G = {
+        credits: 100,
+        totalEarned: 0,
+        shards: 0,
+        res: { yield: 1, speed: 1, costY: 500, costS: 1000 },
+        biz: [
+            { id: 0, name: "Neon Stand", lvl: 1, cost: 10, rev: 5, time: 800, auto: false, mng: 150 },
+            { id: 1, name: "Data Siphon", lvl: 0, cost: 200, rev: 65, time: 2500, auto: false, mng: 2000 },
+            { id: 2, name: "Quantum Rig", lvl: 0, cost: 1500, rev: 550, time: 7000, auto: false, mng: 15000 },
+            { id: 3, name: "Void Node", lvl: 0, cost: 20000, rev: 6000, time: 18000, auto: false, mng: 100000 }
+        ],
+        stocks: [
+            { id: 0, sym: "NEO", price: 100, owned: 0 },
+            { id: 1, sym: "VOID", price: 500, owned: 0 }
+        ],
+        hackHealth: 100
+    };
+
+    // --- MATH ---
+    const getMulti = () => 1 + (G.shards * 0.15);
+    const getBizCost = (b) => Math.floor(b.cost * Math.pow(1.6, b.lvl));
+    const getBizRev = (b) => Math.floor(b.rev * b.lvl * getMulti() * G.res.yield);
+
+    // --- UI CONTROLS ---
+    function tab(id, el) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
+    }
+
+    function notify(msg) {
+        const container = document.getElementById('notif-container');
+        const n = document.createElement('div');
+        n.className = 'notif';
+        n.innerText = msg;
+        container.appendChild(n);
+        setTimeout(() => n.remove(), 4000);
+    }
+
+    function updateUI() {
+        document.getElementById('credits').innerText = "$" + Math.floor(G.credits).toLocaleString();
+        document.getElementById('shards-val').innerText = G.shards.toLocaleString();
+        document.getElementById('global-multi').innerText = getMulti().toFixed(1) + "x";
+        
+        let gain = Math.floor(Math.sqrt(G.totalEarned / 10000));
+        document.getElementById('shard-gain').innerText = "+" + gain + " Shards";
+        
+        // Lab Costs
+        document.getElementById('res-yield-cost').innerText = G.res.costY.toLocaleString();
+        document.getElementById('res-speed-cost').innerText = G.res.costS.toLocaleString();
+    }
+
+    function renderDistrict() {
+        document.getElementById('biz-render').innerHTML = G.biz.map(b => `
+            <div class="panel" id="biz-panel-${b.id}">
+                <div style="display:flex; justify-content:space-between">
+                    <strong style="color:var(--neon-blue)">${b.name}</strong>
+                    <span style="color:#555">Lv.${b.lvl}</span>
+                </div>
+                <div class="prog-bg"><div class="prog-fill" id="bar-${b.id}"></div></div>
+                <button class="btn btn-blue" id="work-btn-${b.id}" onclick="work(${b.id})" ${b.lvl === 0 || G.biz[b.id].working ? 'disabled' : ''}>
+                    ${b.auto ? 'AUTOMATED' : 'START CYCLE'}
+                </button>
+                <div style="display:flex; gap:10px; margin-top:10px">
+                    <button class="btn btn-green" onclick="buyBiz(${b.id})" ${G.credits < getBizCost(b) ? 'disabled' : ''}>
+                        UP ($${getBizCost(b)})
+                    </button>
+                    <button class="btn btn-purple" onclick="buyMng(${b.id})" ${G.credits < b.mng || b.auto ? 'disabled' : ''}>
+                        ${b.auto ? 'HIRED' : 'MNG ($' + b.mng.toLocaleString() + ')'}
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderMarket() {
+        document.getElementById('market-render').innerHTML = G.stocks.map((s, i) => `
+            <div class="panel">
+                <h2 style="margin:0; color:var(--success-green)">${s.sym}</h2>
+                <div style="font-size:1.8rem; font-family:monospace;">$${s.price.toFixed(2)}</div>
+                <div style="color:#888; margin:10px 0">PORTFOLIO: ${s.owned}</div>
+                <div style="display:flex; gap:5px">
+                    <button class="btn btn-green" onclick="buyStock(${i})">BUY</button>
+                    <button class="btn btn-purple" style="background:#600" onclick="sellStock(${i})">SELL</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- ACTIONS ---
+    function work(id) {
+        let b = G.biz[id];
+        if (b.working || b.lvl === 0) return;
+        b.working = true;
+        
+        let start = performance.now();
+        let duration = b.time / G.res.speed;
+        let bar = document.getElementById(`bar-${id}`);
+
+        function anim(now) {
+            let elapsed = now - start;
+            let pct = Math.min((elapsed / duration) * 100, 100);
+            if (bar) bar.style.width = pct + "%";
+            
+            if (elapsed < duration) requestAnimationFrame(anim);
+            else {
+                let payout = getBizRev(b);
+                let isCrit = Math.random() < 0.07;
+                if (isCrit) { payout *= 5; spawnCrit(id); }
+                
+                G.credits += payout;
+                G.totalEarned += payout;
+                b.working = false;
+                if (bar) bar.style.width = "0%";
+                if (b.auto) work(id);
+                updateUI();
+            }
+        }
+        requestAnimationFrame(anim);
+    }
+
+    function spawnCrit(id) {
+        const p = document.getElementById(`biz-panel-${id}`);
+        const c = document.createElement('div');
+        c.className = 'crit-text';
+        c.innerText = "CRITICAL!!";
+        c.style.left = "40%"; c.style.top = "10%";
+        p.appendChild(c);
+        setTimeout(() => c.remove(), 1000);
+    }
+
+    function buyBiz(id) {
+        let b = G.biz[id];
+        if (G.credits >= getBizCost(b)) {
+            G.credits -= getBizCost(b);
+            b.lvl++;
+            renderDistrict();
+            updateUI();
+        }
+    }
+
+    function buyMng(id) {
+        let b = G.biz[id];
+        if (G.credits >= b.mng && !b.auto) {
+            G.credits -= b.mng;
+            b.auto = true;
+            work(id);
+            renderDistrict();
+            notify(`${b.name} automated.`);
+        }
+    }
+
+    function buyRes(type) {
+        if (type === 'yield' && G.credits >= G.res.costY) {
+            G.credits -= G.res.costY;
+            G.res.yield += 0.25;
+            G.res.costY = Math.floor(G.res.costY * 3);
+            notify("Revenue protocols optimized.");
+        } else if (type === 'speed' && G.credits >= G.res.costS) {
+            G.credits -= G.res.costS;
+            G.res.speed += 0.15;
+            G.res.costS = Math.floor(G.res.costS * 3);
+            notify("Neural links overclocked.");
+        }
+        updateUI();
+    }
+
+    // --- STOCK MARKET ENGINE ---
+    function tickMarket() {
+        G.stocks.forEach(s => {
+            let drift = (Math.random() - 0.46) * 0.12; 
+            s.price = Math.max(5, s.price * (1 + drift));
+        });
+        if (document.getElementById('exchange').classList.contains('active')) renderMarket();
+    }
+
+    function buyStock(i) {
+        if (G.credits >= G.stocks[i].price) {
+            G.credits -= G.stocks[i].price;
+            G.stocks[i].owned++;
+            renderMarket();
+            updateUI();
+        }
+    }
+
+    function sellStock(i) {
+        if (G.stocks[i].owned > 0) {
+            G.credits += G.stocks[i].price;
+            G.stocks[i].owned--;
+            renderMarket();
+            updateUI();
+        }
+    }
+
+    // --- HACKER DEFENSE ENGINE ---
+    function triggerHack() {
+        if (G.credits > 5000 && Math.random() < 0.15) {
+            G.hackHealth = 100;
+            document.getElementById('hacker-overlay').style.display = 'flex';
+            window.hackInt = setInterval(() => {
+                G.hackHealth -= 2.5;
+                document.getElementById('hack-bar-fill').style.width = G.hackHealth + "%";
+                if (G.hackHealth <= 0) {
+                    G.credits *= 0.5;
+                    notify("SECURITY BREACH: Lost 50% credits!");
+                    endHack();
+                }
+            }, 100);
+        }
+    }
+
+    function defendHack() {
+        G.hackHealth += 12;
+        if (G.hackHealth >= 120) {
+            notify("Hacker repelled.");
+            endHack();
+        }
+    }
+
+    function endHack() {
+        clearInterval(window.hackInt);
+        document.getElementById('hacker-overlay').style.display = 'none';
+        updateUI();
+    }
+
+    function prestige() {
+        let gain = Math.floor(Math.sqrt(G.totalEarned / 10000));
+        if (gain > 0 && confirm("Ascend and reset current progress for Shards?")) {
+            G.shards += gain;
+            G.credits = 100; G.totalEarned = 0;
+            G.biz.forEach(b => { b.lvl = (b.id === 0 ? 1 : 0); b.auto = false; b.working = false; });
+            G.res = { yield: 1, speed: 1, costY: 500, costS: 1000 };
+            renderDistrict();
+            tab('district', document.querySelector('.nav-link'));
+            notify("Cycle Rebooted.");
+        }
+    }
+
+    // --- INIT ---
+    renderDistrict();
+    updateUI();
+    setInterval(tickMarket, 4000);
+    setInterval(triggerHack, 30000);
+    // Persist automation
+    G.biz.forEach(b => { if (b.auto) work(b.id); });
+
+</script>
+</body>
+</html>
