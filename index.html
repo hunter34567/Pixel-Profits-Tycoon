@@ -2,294 +2,183 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYBER-EMPIRE: OMNIVERSAL v11.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Crazy Digger Frenzy</title>
     <style>
-        :root {
-            --neon-blue: #00f3ff;
-            --neon-pink: #ff00ff;
-            --prestige-gold: #ffcc00;
-            --hacker-red: #ff4d4d;
-            --success-green: #2ecc71;
-            --bg-dark: #020205;
-            --panel-bg: rgba(10, 12, 16, 0.95);
-            --black-market: #1a0033;
-        }
-
-        body {
-            background: var(--bg-dark); color: #e0e0e0;
-            font-family: 'Segoe UI', 'Courier New', monospace;
-            margin: 0; height: 100vh; overflow: hidden;
-        }
-
-        /* --- HEADER & STATS --- */
-        #header {
-            background: #000; border-bottom: 2px solid var(--neon-blue);
-            padding: 10px 30px; display: flex; justify-content: space-between; align-items: center;
-        }
-        .stat-val { font-size: 1.6rem; font-weight: bold; font-family: 'Courier New'; color: var(--neon-blue); }
-
-        #main-container { display: flex; height: calc(100vh - 100px); }
-
-        /* --- SIDEBAR --- */
-        #sidebar {
-            width: 220px; background: #050508; border-right: 1px solid #1a1a2e;
-            display: flex; flex-direction: column;
-        }
-        .nav-link {
-            padding: 18px; color: #555; cursor: pointer; border-left: 4px solid transparent;
-            font-weight: bold; transition: 0.2s; text-transform: uppercase; font-size: 0.85rem;
-        }
-        .nav-link.active { color: var(--neon-blue); background: #0a0a1f; border-left-color: var(--neon-blue); }
-        #market-link { display: none; color: var(--prestige-gold); border-left-color: var(--prestige-gold); animation: pulse 1s infinite; }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
-        /* --- VIEWPORT --- */
-        #viewport { flex: 1; overflow-y: auto; padding: 30px; position: relative; }
-        .view { display: none; }
-        .view.active { display: block; }
-
-        .panel {
-            background: var(--panel-bg); border: 1px solid #1a1a2e; padding: 20px;
-            border-radius: 4px; margin-bottom: 20px; position: relative;
-        }
-        .btn { cursor: pointer; border: none; padding: 12px; border-radius: 3px; font-weight: bold; text-transform: uppercase; }
-        .btn-main { width: 100%; background: var(--neon-blue); color: #000; margin-bottom: 8px; }
-        .btn-market { background: var(--prestige-gold); color: #000; }
-
-        /* --- PROGRESS BARS --- */
-        .progress-bar { width: 100%; height: 8px; background: #000; margin: 10px 0; border-radius: 4px; overflow: hidden; }
-        .progress-fill { height: 100%; width: 0%; background: var(--neon-blue); transition: width 0.1s linear; }
-
-        /* --- BLACK MARKET UI --- */
-        #black-market-view { background: radial-gradient(circle, #1a0033 0%, #020205 100%); }
-        .artifact-card { border: 1px solid var(--prestige-gold); padding: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.5); }
-
-        #notif { position: fixed; top: 20px; right: 20px; background: var(--neon-pink); color: white; padding: 10px 20px; border-radius: 5px; display: none; z-index: 1000; }
+        body { margin: 0; padding: 0; background-color: #1a1a1a; color: white; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; user-select: none; touch-action: manipulation; }
+        #ui-layer { position: absolute; top: 15px; left: 15px; right: 15px; pointer-events: none; display: flex; justify-content: space-between; }
+        .stat-box { background: rgba(0, 0, 0, 0.7); padding: 10px; border-radius: 8px; border: 1px solid #444; }
+        .stat { font-size: 18px; font-weight: bold; color: #ffcc00; }
+        #frenzy-container { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); width: 180px; height: 12px; background: #333; border-radius: 10px; border: 2px solid #fff; overflow: hidden; }
+        #frenzy-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #ff0000, #ffcc00); transition: width 0.1s; }
+        #shop { position: absolute; bottom: 15px; width: 100%; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 0 10px; box-sizing: border-box; }
+        button { padding: 10px 14px; font-size: 13px; font-weight: bold; color: white; border: none; border-radius: 6px; cursor: pointer; pointer-events: auto; }
+        .upgrade-btn { background: #2196f3; box-shadow: 0 3px #1565c0; }
+        .auto-btn { background: #9c27b0; box-shadow: 0 3px #7b1fa2; }
+        .zbd-btn { background: #00cf8d; box-shadow: 0 3px #008f61; width: 100%; margin-top: 5px; }
+        #zbd-section { background: rgba(0,207,141,0.15); padding: 8px; border-radius: 10px; border: 1px solid #00cf8d; width: 180px; text-align: center; }
+        input { width: 90%; padding: 5px; margin: 5px 0; border-radius: 4px; border: none; text-align: center; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
 
-<div id="notif">SIGNAL DETECTED</div>
-
-<div id="header">
-    <div style="display:flex; gap:25px;">
-        <div><small>CREDITS</small><div id="credits" class="stat-val">$0</div></div>
-        <div><small>NEURAL KEYS</small><div id="keys" class="stat-val" style="color:var(--neon-pink)">0</div></div>
-        <div><small>BIT-SHARDS</small><div id="shards" class="stat-val" style="color:var(--prestige-gold)">0</div></div>
-    </div>
-    <div style="text-align:right">
-        <small>ARTIFACTS ACTIVE</small>
-        <div id="active-artifacts" style="color:var(--neon-blue); font-weight:bold;">0</div>
-    </div>
-</div>
-
-<div id="main-container">
-    <div id="sidebar">
-        <div class="nav-link active" onclick="showTab('map', this)">CITY MAP</div>
-        <div class="nav-link" onclick="showTab('district', this)">LOCAL NODES</div>
-        <div id="market-link" class="nav-link" onclick="showTab('black-market-view', this)">BLACK MARKET</div>
-        <div class="nav-link" onclick="showTab('warroom', this)">WAR ROOM</div>
-        <div class="nav-link" onclick="showTab('ascend', this)">ASCENSION</div>
+    <div id="ui-layer">
+        <div class="stat-box">
+            <div class="stat">💰 Gold: <span id="gold-count">0</span></div>
+            <div class="stat">📏 Depth: <span id="depth-count">0</span>m</div>
+        </div>
+        <div id="zbd-section">
+            <input type="text" id="zbd-tag" placeholder="ZBD Gamertag">
+            <button class="zbd-btn" onclick="requestPayout()">Cashout 10 Sats</button>
+        </div>
     </div>
 
-    <div id="viewport">
-        <div id="map" class="view active">
-            <h2 style="color:var(--neon-blue)">District Expansion</h2>
-            <div id="map-render" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px;"></div>
-        </div>
+    <div id="frenzy-container"><div id="frenzy-bar"></div></div>
 
-        <div id="district" class="view">
-            <h2 id="current-dist-name" style="color:var(--neon-blue)">Sector</h2>
-            <div id="node-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px;"></div>
-        </div>
+    <div id="shop">
+        <button class="upgrade-btn" onclick="buyPower()">Pickaxe (Cost: <span id="p-cost">50</span>)</button>
+        <button class="auto-btn" onclick="buyAuto()">Miner (Cost: <span id="a-cost">100</span>)</button>
+    </div>
 
-        <div id="black-market-view" class="view">
-            <h1 style="color:var(--prestige-gold)">The Shadow Registry</h1>
-            <p>Illegal hardware and exploits. Prices in <span style="color:var(--neon-pink)">Neural Keys</span>.</p>
-            <div id="artifact-list"></div>
-        </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
         
-        <div id="warroom" class="view">
-            <div class="panel">
-                <h3>Cyber-Defense Matrix</h3>
-                <p>Global Security Level: <span id="global-sec">1</span></p>
-                <button class="btn btn-main" onclick="upgradeGlobalSec()">Upgrade Defense ($<span id="sec-cost">1000</span>)</button>
-            </div>
-        </div>
+        let state = { gold: 0, depth: 0, digPower: 1, autoMiners: 0, pCost: 50, aCost: 100 };
+        let blocks = [], particles = [], frenzy = 0, isFrenzy = false, lastAuto = 0;
+        const COLS = 5, ROWS = 10;
+        let blockSize = window.innerWidth / COLS;
 
-        <div id="ascend" class="view" style="text-align:center">
-            <div class="panel" style="max-width:500px; margin: 40px auto; border: 2px solid var(--prestige-gold)">
-                <h1 style="color:var(--prestige-gold)">QUANTUM REBOOT</h1>
-                <div id="shard-potential" style="font-size:3rem; margin:20px 0">+0</div>
-                <button class="btn btn-main" style="background:var(--prestige-gold)" onclick="ascend()">ASCEND</button>
-            </div>
-        </div>
-    </div>
-</div>
+        // Load Game
+        if(localStorage.getItem('diggerSave')) state = JSON.parse(localStorage.getItem('diggerSave'));
+        function save() { localStorage.setItem('diggerSave', JSON.stringify(state)); }
 
-<script>
-    let G = {
-        credits: 1000, totalEver: 0, shards: 0, keys: 5, globalSec: 1,
-        activeDistrict: 0, marketOpen: false,
-        artifactsOwned: [],
-        districts: [
-            { id: 0, name: "Industrial Sector", unlocked: true, cost: 0, mod: 1, speed: 1 },
-            { id: 1, name: "Neon Slums", unlocked: false, cost: 10000, mod: 2.5, speed: 0.8 },
-            { id: 2, name: "Corporate Core", unlocked: false, cost: 250000, mod: 10, speed: 0.5 }
-        ],
-        nodes: [
-            { id: 0, d: 0, name: "Data Tap", lvl: 1, cost: 15, rev: 12, time: 1000, auto: false },
-            { id: 1, d: 0, name: "Logic Rig", lvl: 0, cost: 200, rev: 90, time: 3000, auto: false },
-            { id: 2, d: 1, name: "Slum Network", lvl: 0, cost: 1500, rev: 500, time: 5000, auto: false },
-            { id: 3, d: 2, name: "Mainframe", lvl: 0, cost: 50000, rev: 20000, time: 20000, auto: false }
-        ],
-        artifactPool: [
-            { id: 0, name: "Overclock Chip", desc: "x2 Work Speed for 60s", cost: 5, type: 'temp-speed' },
-            { id: 1, name: "Tax Haven", desc: "x1.5 Revenue permanently", cost: 15, type: 'perm-rev' },
-            { id: 2, name: "Key Generator", desc: "Doubles Key drop rate", cost: 10, type: 'perm-keys' }
-        ]
-    };
-
-    let tempMulti = { speed: 1, rev: 1 };
-
-    function updateUI() {
-        document.getElementById('credits').innerText = "$" + Math.floor(G.credits).toLocaleString();
-        document.getElementById('keys').innerText = G.keys;
-        document.getElementById('shards').innerText = G.shards.toLocaleString();
-        document.getElementById('active-artifacts').innerText = G.artifactsOwned.length;
-        document.getElementById('shard-potential').innerText = "+" + Math.floor(Math.sqrt(G.totalEver / 50000));
-        renderMap();
-        renderNodes();
-    }
-
-    function renderMap() {
-        document.getElementById('map-render').innerHTML = G.districts.map(d => `
-            <div class="panel" style="cursor:pointer; border-color:${G.activeDistrict === d.id ? 'var(--neon-blue)' : '#1a1a2e'}" onclick="selectDist(${d.id})">
-                <h3>${d.name}</h3>
-                ${d.unlocked ? `<p style="color:var(--success-green)">MOD: ${d.mod}x</p>` : `<button class="btn btn-main" onclick="unlockDist(${d.id}, event)">UNLOCK ($${d.cost.toLocaleString()})</button>`}
-            </div>
-        `).join('');
-    }
-
-    function renderNodes() {
-        const currentNodes = G.nodes.filter(n => n.d === G.activeDistrict);
-        document.getElementById('current-dist-name').innerText = G.districts[G.activeDistrict].name;
-        document.getElementById('node-grid').innerHTML = currentNodes.map(n => `
-            <div class="panel">
-                <strong>${n.name} Lv.${n.lvl}</strong>
-                <div class="progress-bar"><div id="bar-${n.id}" class="progress-fill"></div></div>
-                <button class="btn btn-main" onclick="work(${n.id})" ${n.lvl === 0 || n.working ? 'disabled' : ''}>${n.auto ? 'AUTO-RUNNING' : 'RUN'}</button>
-                <button class="btn btn-main" style="font-size:0.7rem; background:#222; color:white;" onclick="buyNode(${n.id})">LVL: $${Math.floor(n.cost * Math.pow(1.6, n.lvl)).toLocaleString()}</button>
-            </div>
-        `).join('');
-    }
-
-    function selectDist(id) { if (G.districts[id].unlocked) { G.activeDistrict = id; updateUI(); } }
-
-    function unlockDist(id, e) {
-        e.stopPropagation();
-        if (G.credits >= G.districts[id].cost) {
-            G.credits -= G.districts[id].cost; G.districts[id].unlocked = true; updateUI();
-        }
-    }
-
-    function work(id) {
-        let n = G.nodes[id];
-        if (n.working || n.lvl === 0) return;
-        n.working = true;
-        let start = performance.now();
-        let dur = (n.time / G.districts[n.d].speed) / tempMulti.speed;
-        
-        function frame(now) {
-            let pct = Math.min(((now - start) / dur) * 100, 100);
-            if(document.getElementById(`bar-${id}`)) document.getElementById(`bar-${id}`).style.width = pct + "%";
-            if (now - start < dur) requestAnimationFrame(frame);
-            else {
-                let payout = Math.floor(n.rev * n.lvl * (1 + G.shards * 0.5) * G.districts[n.d].mod * tempMulti.rev);
-                G.credits += payout; G.totalEver += payout;
-                n.working = false;
-                // Key Drop Logic
-                let keyChance = G.artifactsOwned.includes('Key Generator') ? 0.2 : 0.1;
-                if (Math.random() < keyChance) G.keys++;
-                if (n.auto) work(id);
-                updateUI();
-            }
-        }
-        requestAnimationFrame(frame);
-    }
-
-    function buyNode(id) {
-        let n = G.nodes[id];
-        let cost = Math.floor(n.cost * Math.pow(1.6, n.lvl));
-        if (G.credits >= cost) {
-            G.credits -= cost; n.lvl++;
-            if (n.lvl >= 10) n.auto = true;
+        function init() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            blockSize = canvas.width / COLS;
+            for (let y = 0; y < ROWS; y++) addRow(y);
             updateUI();
         }
-    }
 
-    // --- BLACK MARKET LOGIC ---
-    function toggleBlackMarket() {
-        G.marketOpen = !G.marketOpen;
-        const link = document.getElementById('market-link');
-        if (G.marketOpen) {
-            link.style.display = 'block';
-            notify("ENCRYPTED SIGNAL DETECTED");
-            renderArtifacts();
-            setTimeout(() => { toggleBlackMarket(); }, 30000); // Closes in 30s
-        } else {
-            link.style.display = 'none';
-            if (document.getElementById('black-market-view').classList.contains('active')) {
-                showTab('map', document.querySelector('.nav-link'));
+        function addRow(yOffset) {
+            for (let x = 0; x < COLS; x++) {
+                let hpBase = 3 + Math.floor(state.depth / 20);
+                blocks.push({
+                    x: x * blockSize,
+                    y: yOffset * blockSize + 150,
+                    hp: hpBase, maxHp: hpBase,
+                    color: `hsl(${25 + (state.depth % 360)}, 60%, ${35 - (x % 2 * 5)}%)`
+                });
             }
         }
-    }
 
-    function renderArtifacts() {
-        document.getElementById('artifact-list').innerHTML = G.artifactPool.map(a => `
-            <div class="artifact-card">
-                <h3>${a.name}</h3>
-                <p>${a.desc}</p>
-                <button class="btn btn-market" onclick="buyArtifact(${a.id})" ${G.keys < a.cost ? 'disabled' : ''}>BUY (${a.cost} KEYS)</button>
-            </div>
-        `).join('');
-    }
-
-    function buyArtifact(id) {
-        let a = G.artifactPool[id];
-        if (G.keys >= a.cost) {
-            G.keys -= a.cost;
-            if (a.type === 'temp-speed') {
-                tempMulti.speed = 2;
-                setTimeout(() => { tempMulti.speed = 1; notify("Overclock Chip Burned Out"); }, 60000);
-            } else if (a.type === 'perm-rev') {
-                tempMulti.rev *= 1.5;
-                G.artifactsOwned.push(a.name);
-            } else if (a.type === 'perm-keys') {
-                G.artifactsOwned.push(a.name);
-            }
-            notify("ARTIFACT INTEGRATED");
-            updateUI();
-            renderArtifacts();
+        function handleDig(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            processHit(x, y, state.digPower * (isFrenzy ? 3 : 1));
+            frenzy = Math.min(100, frenzy + 2);
         }
-    }
 
-    function notify(txt) {
-        const el = document.getElementById('notif');
-        el.innerText = txt; el.style.display = 'block';
-        setTimeout(() => el.style.display = 'none', 3000);
-    }
+        function processHit(x, y, damage) {
+            for (let i = blocks.length - 1; i >= 0; i--) {
+                let b = blocks[i];
+                if (x > b.x && x < b.x + blockSize && y > b.y && y < b.y + blockSize) {
+                    b.hp -= damage;
+                    spawnParticles(x, y, b.color);
+                    if (b.hp <= 0) {
+                        state.gold += 5;
+                        blocks.splice(i, 1);
+                        state.depth++;
+                        if (blocks.length < (COLS * ROWS) - 5) {
+                            blocks.forEach(bl => bl.y -= blockSize);
+                            addRow(ROWS - 1);
+                        }
+                    }
+                    save();
+                    updateUI();
+                    break;
+                }
+            }
+        }
 
-    function showTab(id, el) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-        document.getElementById(id).classList.add('active'); el.classList.add('active');
-    }
+        function spawnParticles(x, y, color) {
+            for(let i=0; i<5; i++) particles.push({x, y, sx:(Math.random()-0.5)*8, sy:(Math.random()-0.5)*8, life:1, color});
+        }
 
-    setInterval(() => { if (!G.marketOpen && Math.random() < 0.2) toggleBlackMarket(); }, 20000);
-    updateUI();
-</script>
+        function buyPower() {
+            if (state.gold >= state.pCost) {
+                state.gold -= state.pCost; state.digPower++; state.pCost *= 2;
+                save(); updateUI();
+            }
+        }
+
+        function buyAuto() {
+            if (state.gold >= state.aCost) {
+                state.gold -= state.aCost; state.autoMiners++; state.aCost *= 2;
+                save(); updateUI();
+            }
+        }
+
+        async function requestPayout() {
+            const tag = document.getElementById('zbd-tag').value;
+            if (state.gold < 1000) return alert("Need 1,000 Gold!");
+            if (!tag) return alert("Enter ZBD Tag!");
+            
+            const response = await fetch('/api/pay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gamertag: tag, amountSats: 1 })
+            });
+            const res = await response.json();
+            if (res.success) { state.gold -= 1000; save(); updateUI(); alert("Sats Sent!"); }
+        }
+
+        function updateUI() {
+            document.getElementById('gold-count').innerText = state.gold;
+            document.getElementById('depth-count').innerText = state.depth;
+            document.getElementById('p-cost').innerText = state.pCost;
+            document.getElementById('a-cost').innerText = state.aCost;
+        }
+
+        function animate(time) {
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Frenzy Logic
+            if (frenzy >= 100) isFrenzy = true;
+            if (isFrenzy) { frenzy -= 0.5; if (frenzy <= 0) isFrenzy = false; }
+            else { frenzy = Math.max(0, frenzy - 0.1); }
+            document.getElementById('frenzy-bar').style.width = frenzy + "%";
+
+            // Auto Miners
+            if (time - lastAuto > 1000 && state.autoMiners > 0) {
+                state.gold += state.autoMiners;
+                lastAuto = time; updateUI();
+            }
+
+            blocks.forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x + 1, b.y + 1, blockSize - 2, blockSize - 2);
+            });
+
+            particles.forEach((p, i) => {
+                p.x += p.sx; p.y += p.sy; p.life -= 0.02;
+                ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, 4, 4);
+                if (p.life <= 0) particles.splice(i, 1);
+            });
+            ctx.globalAlpha = 1;
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('mousedown', handleDig);
+        window.addEventListener('touchstart', handleDig);
+        init(); animate(0);
+    </script>
 </body>
 </html>
