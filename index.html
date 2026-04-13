@@ -2,205 +2,102 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Warzone - Fixed Edition</title>
+    <title>3D Warzone - NO TEXTURE EDITION</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
-        #ui {
-            position: absolute; top: 20px; left: 20px; color: #fff;
-            background: rgba(0,0,0,0.8); padding: 15px; border-radius: 5px;
-            border-left: 5px solid #0f0; pointer-events: none;
-        }
-        #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
-            background: rgba(255,255,255,0.8); border-radius: 50%;
-            transform: translate(-50%, -50%); pointer-events: none;
-        }
-        #msg {
-            position: absolute; top: 40%; width: 100%; text-align: center;
-            color: #f00; font-size: 3rem; font-weight: bold; display: none;
-            text-shadow: 2px 2px #000;
-        }
-        #instructions {
-            position: absolute; bottom: 20px; width: 100%; text-align: center;
-            color: #aaa; font-size: 0.9rem;
-        }
+        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
+        #ui { position: absolute; top: 10px; left: 10px; color: #0f0; background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #0f0; pointer-events: none; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; background: white; border-radius: 50%; transform: translate(-50%, -50%); }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        <div>HEALTH: <span id="hp">100</span></div>
-        <div>HOSTILES: <span id="count">0</span></div>
-        <div style="color: #ff0;">ZONE: <span id="z-dist">0</span>m</div>
+        <div>HP: <span id="hp">100</span></div>
+        <div>ENEMIES: <span id="count">0</span></div>
     </div>
-    <div id="msg">ELIMINATED</div>
-    <div id="instructions">CLICK TO START | WASD TO MOVE | MOUSE TO AIM</div>
     <div id="crosshair"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 
 <script>
-// --- NO-FILE TEXTURE ENGINE ---
-function generateProceduralMetal() {
-    const size = 256;
-    const canvas = document.createElement('canvas');
-    canvas.width = size; canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    
-    // Base Metal
-    ctx.fillStyle = '#444444';
-    ctx.fillRect(0, 0, size, size);
-    
-    // Scratches and Grit
-    for(let i=0; i<400; i++) {
-        ctx.fillStyle = Math.random() > 0.5 ? '#555' : '#333';
-        ctx.fillRect(Math.random()*size, Math.random()*size, Math.random()*3, Math.random()*15);
-    }
-    
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(20, 20);
-    return tex;
-}
-
-// --- INITIALIZE SCENE ---
+// 1. Scene Setup
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1a1a1a);
-scene.fog = new THREE.FogExp2(0x1a1a1a, 0.0015);
+scene.background = new THREE.Color(0x222222); 
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
+const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// --- APPLY FIX ---
-const metalTex = generateProceduralMetal();
-const groundMat = new THREE.MeshStandardMaterial({ 
-    map: metalTex,
-    metalness: 0.7,
-    roughness: 0.3
-});
-
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), groundMat);
+// 2. THE ULTIMATE FIX: No StandardMaterial, No Loaders, No Maps.
+// We are using MeshBasicMaterial with hex colors ONLY.
+const groundGeo = new THREE.PlaneGeometry(2000, 2000);
+const groundMat = new THREE.MeshBasicMaterial({ color: 0x334433 }); // Solid Dark Green
+const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
-// Lights
-const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-sun.position.set(50, 100, 50);
-scene.add(sun);
-scene.add(new THREE.AmbientLight(0x404040, 0.5));
+// 3. Grid (To help see movement since there's no texture)
+const grid = new THREE.GridHelper(2000, 50, 0x00ff00, 0x444444);
+scene.add(grid);
 
-// --- BATTLE ROYALE ELEMENTS ---
-let zoneRadius = 1200;
-const zoneMesh = new THREE.Mesh(
-    new THREE.TorusGeometry(zoneRadius, 5, 16, 100),
-    new THREE.MeshBasicMaterial({ color: 0xff0000 })
-);
-zoneMesh.rotation.x = Math.PI / 2;
-scene.add(zoneMesh);
-
+// 4. Game Objects
 const enemies = [];
-const bullets = [];
-const keys = {};
-const player = { pos: new THREE.Vector3(0, 12, 0), hp: 100, speed: 2.5 };
+const player = { pos: new THREE.Vector3(0, 10, 0), hp: 100 };
 
-// Spawn Hostiess
-for(let i=0; i<40; i++) {
-    const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(10, 24, 10),
-        new THREE.MeshStandardMaterial({ color: 0xee0000 })
+for(let i=0; i<20; i++) {
+    const enMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(10, 20, 10),
+        new THREE.MeshBasicMaterial({ color: 0xff0000 }) // Solid Red
     );
-    mesh.position.set((Math.random()-0.5)*2000, 12, (Math.random()-0.5)*2000);
-    scene.add(mesh);
-    enemies.push({ mesh, hp: 50, lastShot: 0 });
+    enMesh.position.set((Math.random()-0.5)*1000, 10, (Math.random()-0.5)*1000);
+    scene.add(enMesh);
+    enemies.push(enMesh);
 }
 
-// --- SYSTEMS ---
+// 5. Controls & Logic
+const keys = {};
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
 
-function shoot() {
-    const b = new THREE.Mesh(new THREE.SphereGeometry(1.5), new THREE.MeshBasicMaterial({ color: 0xffff00 }));
-    b.position.copy(player.pos);
-    const dir = new THREE.Vector3();
-    camera.getWorldDirection(dir);
-    bullets.push({ mesh: b, dir, speed: 15, life: 120 });
-    scene.add(b);
-}
-
-window.addEventListener('mousedown', () => {
-    if(document.pointerLockElement) shoot();
-    else renderer.domElement.requestPointerLock();
+let yaw = 0;
+window.addEventListener('mousemove', e => {
+    if(document.pointerLockElement) {
+        yaw -= e.movementX * 0.003;
+        camera.rotation.set(0, yaw, 0, 'YXZ');
+    }
 });
 
-// --- MAIN LOOP ---
-function update() {
-    if(player.hp <= 0) {
-        document.getElementById('msg').style.display = 'block';
-        return;
-    }
+renderer.domElement.onclick = () => renderer.domElement.requestPointerLock();
 
-    // Movement
-    const moveDir = new THREE.Vector3();
-    camera.getWorldDirection(moveDir);
-    moveDir.y = 0; moveDir.normalize();
-    const sideDir = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), moveDir);
+function animate() {
+    requestAnimationFrame(animate);
 
-    if(keys['KeyW']) player.pos.addScaledVector(moveDir, player.speed);
-    if(keys['KeyS']) player.pos.addScaledVector(moveDir, -player.speed);
-    if(keys['KeyA']) player.pos.addScaledVector(sideDir, player.speed);
-    if(keys['KeyD']) player.pos.addScaledVector(sideDir, -player.speed);
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    dir.y = 0; dir.normalize();
 
+    if(keys['KeyW']) player.pos.addScaledVector(dir, 2);
+    if(keys['KeyS']) player.pos.addScaledVector(dir, -2);
+    
     camera.position.copy(player.pos);
 
-    // Zone logic
-    zoneRadius -= 0.1;
-    zoneMesh.scale.set(zoneRadius/1200, zoneRadius/1200, 1);
-    if(player.pos.distanceTo(new THREE.Vector3(0,0,0)) > zoneRadius) player.hp -= 0.1;
-
-    // Bullet Logic
-    bullets.forEach((b, i) => {
-        b.mesh.position.addScaledVector(b.dir, b.speed);
-        b.life--;
-        enemies.forEach((en, ei) => {
-            if(b.mesh.position.distanceTo(en.mesh.position) < 15) {
-                en.hp -= 25; b.life = 0;
-                if(en.hp <= 0) { scene.remove(en.mesh); enemies.splice(ei, 1); }
-            }
-        });
-        if(b.life <= 0) { scene.remove(b.mesh); bullets.splice(i, 1); }
-    });
-
-    // Enemy AI
+    // Basic AI follow
     enemies.forEach(en => {
-        if(en.mesh.position.distanceTo(player.pos) < 600) {
-            en.mesh.lookAt(player.pos);
-            en.mesh.translateZ(0.8);
+        const dist = en.position.distanceTo(player.pos);
+        if(dist < 400) {
+            en.lookAt(player.pos.x, 10, player.pos.z);
+            en.translateZ(0.5);
         }
     });
 
-    // UI Updates
     document.getElementById('hp').innerText = Math.ceil(player.hp);
     document.getElementById('count').innerText = enemies.length;
-    document.getElementById('z-dist').innerText = Math.floor(zoneRadius);
 
     renderer.render(scene, camera);
-    requestAnimationFrame(update);
 }
 
-// Mouse look
-let yaw = 0, pitch = 0;
-window.addEventListener('mousemove', e => {
-    if(document.pointerLockElement) {
-        yaw -= e.movementX * 0.002;
-        pitch = Math.max(-1.5, Math.min(1.5, pitch - e.movementY * 0.002));
-        camera.rotation.set(pitch, yaw, 0, 'YXZ');
-    }
-});
-
-update();
+animate();
 </script>
 </body>
 </html>
